@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Fully Homomorphic Encryption (FHE) and fhEVM</title>
+    <script src="https://unpkg.com/@tailwindcss/browser@4"></script>
+    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+    <script
+      id="MathJax-script"
+      async
+      src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"
+    ></script>
+    <link
+      href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css"
+      rel="stylesheet"
+    />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-rust.min.js"></script>
+  </head>
+  <body class="bg-green-50 w-full max-w-[95%] md:w-[60%] mx-auto">
+    <nav class="mt-6">
+      <div>
+        <h1 class="font-serif text-4xl">Harsh's Blog</h1>
+        <div class="mt-5 flex flex-wrap gap-5">
+          <a
+            href="../index.html"
+            class="relative after:content-[''] after:absolute after:w-0 after:h-[2px] after:bg-black after:bottom-[-4px] after:left-0 hover:after:w-full after:transition-all after:duration-300"
+            >Home</a
+          >
+          <a
+            href="./blog.html"
+            class="relative after:content-[''] after:absolute after:w-0 after:h-[2px] after:bg-black after:bottom-[-4px] after:left-0 hover:after:w-full after:transition-all after:duration-300"
+            >Blogs</a
+          >
+          <a
+            href="../maths/maths.html"
+            class="relative after:content-[''] after:absolute after:w-0 after:h-[2px] after:bg-black after:bottom-[-4px] after:left-0 hover:after:w-full after:transition-all after:duration-300"
+            >Maths</a
+          >
+        </div>
+      </div>
+    </nav>
+
+    <hr class="mt-3" />
+
+    <h1 class="text-4xl mt-[57px] mb-3 font-serif">
+      Fully Homomorphic Encryption (FHE) and fhEVM
+    </h1>
+    <span class="text-sm text-gray-500">Published Date</span>
+
+    <p class="text-lg font-serif mt-6">
+      I met Rishab, co-founder of <a href="https://encifher.io" class="underline font-semibold">Encifher</a>, at an event last week, which led me to discover FHE, fhEVM, and more. This discovery inspired me to write this blog post.
+    </p>
+
+    <h1 class="text-2xl font-serif mt-8">The Foundation: Encryption</h1>
+
+    <p class="text-lg font-serif mt-4">
+      Encryption has been at the heart of secure communication for a very long time. One of the foundational systems, RSA (Rivest-Shamir-Adleman), introduced the concept of a Public-Private key pair, which you probably have used to connect your GitHub account to your laptop so that you can securely access it with SSH, and probably also use it to SSH into your AWS EC2 instance running on free AWS credits.
+    </p>
+
+    <p class="text-lg font-serif mt-4">
+      Here's how RSA works:
+    </p>
+
+    <p class="text-lg font-serif mt-4">
+      <span class="font-bold">Key Generation:</span> RSA relies on two large prime numbers, p and q. Their product, n = p × q, forms part of the public key, along with an exponent e. The private key is derived from p, q, and a private exponent d.
+    </p>
+
+    <p class="text-lg font-serif mt-4">
+      <span class="font-bold">Encryption:</span> A sender uses the recipient's public key to compute the ciphertext c using the formula c ≡ m<sup>e</sup> mod n.
+    </p>
+
+    <p class="text-lg font-serif mt-4">
+      <span class="font-bold">Decryption:</span> During decryption, the recipient uses their private key d to recover the original message through the computation m ≡ c<sup>d</sup> mod n. This decryption works because of Euler's theorem.
+    </p>
+
+    <p class="text-lg font-serif mt-4">
+      RSA ensures confidentiality because only the private key can decrypt the message encrypted by the public key. The security of RSA is founded on the computational difficulty of factoring the product of two large prime numbers, known as the factoring problem, making it impractical to derive the private key from publicly available information.
+    </p>
+
+    <img
+      src="./assets/fhe/prime-number-meme.png"
+      class="w-[70%] mx-auto my-10"
+      alt="Prime number meme"
+    />
+
+    <h1 class="text-2xl font-serif mt-8">What is FHE (Fully Homomorphic Encryption)?</h1>
+
+    <p class="text-lg font-serif mt-4">
+      FHE is a form of encryption that allows computations to be performed directly on encrypted data without decrypting it. The result of the computation is still encrypted, but when decrypted, it matches the result as if the computation was performed on the plaintext. When I read about FHE for the first time last week, I was amazed.
+    </p>
+
+    <h1 class="text-2xl font-serif mt-8">How It Works</h1>
+
+    <p class="text-lg font-serif mt-4">
+      <span class="font-bold">Encryption:</span> Let's say some data m is encrypted using a public key, producing ciphertext c. Now here comes the interesting part.
+    </p>
+
+    <p class="text-lg font-serif mt-4">
+      <span class="font-bold">Computation:</span> In FHE, operations like addition and multiplication are performed directly on c. For example, given c<sub>1</sub> = E(m<sub>1</sub>) and c<sub>2</sub> = E(m<sub>2</sub>), c<sub>1</sub> + c<sub>2</sub> decrypts to m<sub>1</sub> + m<sub>2</sub>, and c<sub>1</sub> × c<sub>2</sub> decrypts to m<sub>1</sub> × m<sub>2</sub>.
+    </p>
+
+    <p class="text-lg font-serif mt-4">
+      <span class="font-bold">Decryption:</span> The result of the computation, still encrypted, is decrypted using the private key.
+    </p>
+
+    <p class="text-lg font-serif mt-4">
+      FHE relies on complex mathematical structures like lattices, which I don't yet know much about (gotta do more math). FHE traces back to groundbreaking work by Craig Gentry in 2009. Gentry's scheme laid the foundation for further innovations. If you want to know more, go ask GPT.
+    </p>
+
+    <img
+      src="./assets/fhe/fhe-working.png"
+      class="w-[70%] mx-auto my-10"
+      alt="FHE working diagram"
+    />
+
+    <h1 class="text-2xl font-serif mt-8">Use Cases for Privacy in Public Blockchains</h1>
+
+    <p class="text-lg font-serif mt-4">
+      FHE has a bunch of use cases for privacy in public blockchains because it enables the processing of sensitive data without exposing it to intermediaries or validators. Some key use cases:
+    </p>
+
+    <p class="text-lg font-serif mt-4">
+      <span class="font-bold">Private Transactions:</span> FHE can ensure transaction amounts and account balances remain encrypted while allowing validators to verify the correctness of the transaction. This is an under-development use case that I found a few projects working on, Encifher being one. I met their founder at an event last week, which led me to discover FHE and then write this blog. I know nothing, I just Google, GPT, and copy-paste everything here for no reason.
+    </p>
+
+    <p class="text-lg font-serif mt-4">
+      <span class="font-bold">Privacy-Preserving Smart Contracts:</span> Smart contracts can operate on encrypted inputs, making confidential computations possible while maintaining privacy of selected data. I went ahead to try one of the use cases built on this—private voting using FHE—and interestingly, it worked.
+    </p>
+
+    <p class="text-lg font-serif mt-4">
+      For those interested in diving deeper, this <a href="https://blog.zama.ai/fhe-resources" class="underline font-semibold">introductory resource on FHE</a> provides good resources.
+    </p>
+
+    <h1 class="text-2xl font-serif mt-8">Bringing FHE On-Chain: fhEVM</h1>
+
+    <p class="text-lg font-serif mt-4">
+      The concept of fhEVM (Fully Homomorphic Encryption Virtual Machine) bridges FHE with Ethereum's EVM. The goal is to bring encrypted computations to the Ethereum ecosystem.
+    </p>
+
+    <h1 class="text-2xl font-serif mt-8">How fhEVM Works</h1>
+
+    <p class="text-lg font-serif mt-4">
+      <span class="font-bold">Encrypted Inputs:</span> Users encrypt inputs before sending them to the blockchain.
+    </p>
+
+    <p class="text-lg font-serif mt-4">
+      <span class="font-bold">Encrypted Execution:</span> The fhEVM executes smart contract logic on encrypted data.
+    </p>
+
+    <p class="text-lg font-serif mt-4">
+      <span class="font-bold">Encrypted Outputs:</span> Outputs remain encrypted until the user decrypts them locally.
+    </p>
+
+    <p class="text-lg font-serif mt-4">
+      This reduces the need for trusted execution environments (TEEs) or ZK circuits for privacy. I think it's quite fitting technology for applications like private DeFi (e.g., confidential swaps and lending).
+    </p>
+
+    <p class="text-lg font-serif mt-4">
+      For an in-depth look at fhEVM's potential, check out the work by <a href="https://zama.ai" class="underline font-semibold">Zama.ai</a>.
+    </p>
+
+    <h1 class="text-2xl font-serif mt-8">FHE and Machine Learning</h1>
+
+    <p class="text-lg font-serif mt-4">
+      Machine learning (ML) models are often limited in privacy-sensitive applications because training and inference require plaintext data. FHE enables ML models to operate on encrypted data. This is just one of the many ways ML models can verify or attest to the computation that they do, but better since this assumes the models are faulty and therefore gives them encrypted data instead. However, this comes with the cost of the computation being slow.
+    </p>
+
+    <h1 class="text-2xl font-serif mt-8">Concrete ML by Zama.ai</h1>
+
+    <p class="text-lg font-serif mt-4">
+      Zama.ai has developed a tool, Concrete ML, which uses FHE to bring privacy-preserving capabilities to ML workflows. Here's how it works:
+    </p>
+
+    <p class="text-lg font-serif mt-4">
+      <span class="font-bold">Encryption:</span> Data is encrypted before being fed into the ML model.
+    </p>
+
+    <p class="text-lg font-serif mt-4">
+      <span class="font-bold">Inference:</span> The model processes the encrypted data, performing operations like matrix multiplication without decrypting it.
+    </p>
+
+    <p class="text-lg font-serif mt-4">
+      <span class="font-bold">Decryption:</span> The encrypted output is decrypted to reveal the result.
+    </p>
+
+    <h1 class="text-2xl font-serif mt-8">Example Use Case: Encrypted Credit Scoring</h1>
+
+    <p class="text-lg font-serif mt-4">
+      Imagine a scenario where a financial institution (yeah, where those men in suits work) evaluates creditworthiness without accessing plaintext user data. The input (e.g., income, credit history) is encrypted and processed by the code securely, ensuring user privacy while delivering accurate results.
+    </p>
+
+    <p class="text-lg font-serif mt-4">
+      I went ahead to code this myself and try it out. Here's the code in Rust that uses Zama's tfhe crate to perform a basic credit score calculation from two inputs, encrypt it, do the calculation, and decrypt it later. You know what happened? It worked.
+    </p>
+
+    <pre><code class="language-rust">use tfhe::prelude::*;
+use tfhe::{generate_keys, set_server_key, ConfigBuilder, FheUint8};
+
+fn main() {
+    let config = ConfigBuilder::all_disabled()
+        .enable_default_uint8()
+        .build();
+    
+    let (client_key, server_key) = generate_keys(config);
+    
+    // Encrypt inputs
+    let income = FheUint8::encrypt(75u8, &client_key);
+    let credit_history = FheUint8::encrypt(80u8, &client_key);
+    
+    // Set server key for computation
+    set_server_key(server_key);
+    
+    // Perform computation on encrypted data
+    let credit_score = &income + &credit_history;
+    
+    // Decrypt result
+    let result: u8 = credit_score.decrypt(&client_key);
+    
+    println!("Credit Score: {}", result);
+}</code></pre>
+
+    <img
+      src="./assets/fhe/fhe-rust-example-screenshot.png"
+      class="w-[80%] mx-auto my-10"
+      alt="FHE Rust example screenshot"
+    />
+
+    <p class="text-lg font-serif mt-4">
+      But it took some 5-6 seconds just to do this much calculation with --release. Without that, it wasn't working at all on my PC.
+    </p>
+
+    <h1 class="text-2xl font-serif mt-8">Final Thoughts</h1>
+
+    <p class="text-lg font-serif mt-4">
+    FHE is an exciting technology with immense potential for privacy-preserving applications, especially in blockchain and machine learning. While it's still in its early stages and comes with performance overhead, the future looks quite promising as the technology matures.
+    </p>
+
+    <hr class="my-10" />
+    <footer class="my-8">
+      <div class="flex justify-between items-center">
+        <p>By Harsh</p>
+      </div>
+    </footer>
+  </body>
+</html>
+
